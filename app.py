@@ -11,15 +11,29 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = 'your-super-secret-key-change-in-production-2026'
 
-UPLOAD_FOLDER = 'uploads'
+IS_VERCEL = os.environ.get('VERCEL') == '1' or 'VERCEL_ENV' in os.environ
+UPLOAD_FOLDER = '/tmp/uploads' if IS_VERCEL else 'uploads'
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ====================== FIREBASE ======================
-cred = credentials.Certificate('firebase-key.json')
-firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://fileencryption-69539-default-rtdb.firebaseio.com/'
-})
+try:
+    if not firebase_admin._apps:
+        if os.path.exists('firebase-key.json'):
+            cred = credentials.Certificate('firebase-key.json')
+            firebase_admin.initialize_app(cred, {
+                'databaseURL': 'https://fileencryption-69539-default-rtdb.firebaseio.com/'
+            })
+        elif os.environ.get('FIREBASE_KEY_JSON'):
+            key_data = json.loads(os.environ.get('FIREBASE_KEY_JSON'))
+            cred = credentials.Certificate(key_data)
+            firebase_admin.initialize_app(cred, {
+                'databaseURL': os.environ.get('FIREBASE_DATABASE_URL', 'https://fileencryption-69539-default-rtdb.firebaseio.com/')
+            })
+        else:
+            print("Notice: Firebase key not found on disk or env. App running in local mode.")
+except Exception as e:
+    print(f"Firebase initialization warning: {e}")
 
 # ====================== XOR ENCRYPTION ======================
 def generate_key():
@@ -36,7 +50,7 @@ import socket as _socket
 def sanitize_key(text):
     return re.sub(r'[\.\$\#\[\]\/]', '_', text)
 
-LOCAL_DB_FILE = 'local_db.json'
+LOCAL_DB_FILE = '/tmp/local_db.json' if IS_VERCEL else 'local_db.json'
 
 # ====================== FAST NETWORK CHECK ======================
 _firebase_status = {'online': None, 'checked_at': 0}
