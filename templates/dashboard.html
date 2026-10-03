@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - FileEncryptor</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .toast {
+      animation: slideIn 0.3s ease-out, fadeOut 0.5s ease-in 1.5s forwards;
+    }
+    @keyframes slideIn {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    @keyframes fadeOut {
+      to { opacity: 0; transform: translateY(-10px); }
+    }
+  </style>
+</head>
+<body class="bg-gray-950 text-white">
+  <div class="max-w-6xl mx-auto p-6">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-4xl font-bold">FileEncryptor</h1>
+      <a href="/logout" class="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-xl">Logout</a>
+    </div>
+
+    <!-- Auto-disappearing notifications -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div id="toast-container" class="fixed top-6 right-6 z-50 space-y-3">
+          {% for category, message in messages %}
+            <div class="toast p-4 rounded-xl shadow-lg min-w-[300px] {{ 'bg-green-600' if category == 'success' else 'bg-red-600' }}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="bg-gray-900 rounded-2xl p-8">
+      <h2 class="text-2xl mb-6">Your Files</h2>
+      
+      <form method="POST" enctype="multipart/form-data" class="mb-8 flex flex-wrap items-center gap-4">
+        <input type="file" name="file" class="hidden" id="fileInput" onchange="document.getElementById('fileNameDisplay').textContent = this.files[0] ? this.files[0].name : ''">
+        <button type="button" onclick="document.getElementById('fileInput').click()" 
+                class="bg-purple-600 hover:bg-purple-700 px-8 py-4 rounded-xl text-lg font-semibold">
+          Choose File
+        </button>
+        <span id="fileNameDisplay" class="text-gray-300 font-mono text-sm"></span>
+        <button type="submit" class="bg-green-600 hover:bg-green-700 px-8 py-4 rounded-xl text-lg font-semibold">
+          Encrypt & Upload
+        </button>
+      </form>
+
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-gray-700 text-left">
+            <th class="pb-4">File Name</th>
+            <th class="pb-4">Encryption Key</th>
+            <th class="pb-4">Action</th>
+          </tr>
+        </thead>
+        <tbody class="text-sm">
+          {% for file in files %}
+          <tr class="border-b border-gray-800 hover:bg-gray-800">
+            <td class="py-5">{{ file.name }}</td>
+            <td class="py-5 font-mono text-xs break-all">
+              <span id="key-hidden-{{ file.id }}" class="text-gray-400">••••••••••••••••••••••••••••••••</span>
+              <span id="key-visible-{{ file.id }}" class="hidden">{{ file.key }}</span>
+              
+              <button onclick="toggleKey('{{ file.id }}')" 
+                      id="toggle-btn-{{ file.id }}"
+                      class="ml-3 text-blue-400 hover:text-blue-300 text-sm">
+                👁 View
+              </button>
+              
+              <button onclick="copyKey('{{ file.key }}')" 
+                      class="ml-2 text-blue-400 hover:text-blue-300 text-sm">
+                📋 Copy
+              </button>
+            </td>
+            <td class="py-5">
+              <a href="/download/{{ file.id }}" class="bg-green-600 hover:bg-green-700 px-5 py-2 rounded-lg mr-3">Download & Decrypt</a>
+              <a href="/delete/{{ file.id }}" class="bg-red-600 hover:bg-red-700 px-5 py-2 rounded-lg" 
+                 onclick="return confirm('Delete this file?')">Delete</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Auto remove toast after 2 seconds
+    setTimeout(() => {
+      const container = document.getElementById('toast-container');
+      if (container) {
+        container.remove();
+      }
+    }, 2000);
+
+    function toggleKey(id) {
+      const hidden = document.getElementById('key-hidden-' + id);
+      const visible = document.getElementById('key-visible-' + id);
+      const btn = document.getElementById('toggle-btn-' + id);
+
+      if (visible.classList.contains('hidden')) {
+        hidden.classList.add('hidden');
+        visible.classList.remove('hidden');
+        btn.innerHTML = '🙈 Hide';
+      } else {
+        visible.classList.add('hidden');
+        hidden.classList.remove('hidden');
+        btn.innerHTML = '👁 View';
+      }
+    }
+
+    function copyKey(key) {
+      navigator.clipboard.writeText(key).then(() => {
+        alert('✅ Key copied to clipboard!');
+      });
+    }
+  </script>
+</body>
+</html>
