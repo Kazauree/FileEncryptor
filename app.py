@@ -194,10 +194,11 @@ def delete_file_record(user, file_node_id):
 from werkzeug.security import generate_password_hash, check_password_hash
 
 def save_user(email, password):
-    user_id = sanitize_key(email)
+    email_clean = email.strip().lower()
+    user_id = sanitize_key(email_clean)
     password_hash = generate_password_hash(password)
     user_record = {
-        'email': email,
+        'email': email_clean,
         'password_hash': password_hash
     }
     # Always save locally first
@@ -214,17 +215,22 @@ def save_user(email, password):
             print(f"Firebase user save fallback: {e}")
 
 def get_user(email):
-    user_id = sanitize_key(email)
-    # Check local DB first (instant)
+    if not email:
+        return None
+    email_clean = email.strip().lower()
+    user_id = sanitize_key(email_clean)
+    
+    # Check local DB first
     db_data = get_local_db()
     user = db_data.get('users', {}).get(user_id)
-    if user:
+    if user and isinstance(user, dict) and 'password_hash' in user:
         return user
-    # Only check Firebase if not found locally AND network is available
+
+    # Query Firebase directly
     if is_firebase_available():
         try:
             remote_user = db.reference(f'users/{user_id}').get()
-            if remote_user and isinstance(remote_user, dict):
+            if remote_user and isinstance(remote_user, dict) and 'password_hash' in remote_user:
                 if 'users' not in db_data:
                     db_data['users'] = {}
                 db_data['users'][user_id] = remote_user
@@ -232,7 +238,8 @@ def get_user(email):
                 return remote_user
         except Exception as e:
             print(f"Firebase get_user error: {e}")
-    return None
+
+    return user if isinstance(user, dict) else None
 
 def verify_user_password(email, password):
     user = get_user(email)
@@ -241,10 +248,11 @@ def verify_user_password(email, password):
     return check_password_hash(user['password_hash'], password)
 
 def update_user_password(email, new_password):
-    user_id = sanitize_key(email)
+    email_clean = email.strip().lower()
+    user_id = sanitize_key(email_clean)
     new_hash = generate_password_hash(new_password)
     user_record = {
-        'email': email,
+        'email': email_clean,
         'password_hash': new_hash
     }
     # Always save locally first
@@ -261,7 +269,10 @@ def update_user_password(email, new_password):
             print(f"Firebase update password fallback: {e}")
 
 def delete_user(email):
-    user_id = sanitize_key(email)
+    if not email:
+        return
+    email_clean = email.strip().lower()
+    user_id = sanitize_key(email_clean)
     db_data = get_local_db()
     if 'users' in db_data and user_id in db_data['users']:
         del db_data['users'][user_id]
