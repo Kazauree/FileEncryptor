@@ -1,7 +1,12 @@
 from flask import Flask, render_template, request, redirect, url_for, session, send_file, flash, after_this_request
 import os
+import json
 import base64
 import secrets
+import re
+import time
+import socket as _socket
+from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, db
@@ -16,46 +21,7 @@ UPLOAD_FOLDER = '/tmp/uploads' if IS_VERCEL else 'uploads'
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-FIREBASE_DEFAULT_KEY_B64 = """ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAiZmlsZWVuY3J5cHRp
-b24tNjk1MzkiLAogICJwcml2YXRlX2tleV9pZCI6ICJlMWQ2M2E1OTdmYjg5YzMyNzYwOGIzZGNlNDdi
-MzVhOTUwN2I0NjFlIiwKICAicHJpdmF0ZV9rZXkiOiAiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t
-XG5NSUlFdkFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLWXdnZ1NpQWdFQUFvSUJBUUNrNURQQWpx
-VmpkRUhkXG5PYTJoVWVTQ1FpSjF0Y1FKdDNXaG5MZFBCSFZIWk83OGtUVDdIUWFOMWxHV0hLSTBPcmhX
-Q0ZtL3Y1Q21xSi8vXG5obWQ4cnFNdy9PSjVHeVBSdWxOaGZSSWlRNHBXemhvbXJUODBSd3J3d05xQzlj
-K09telpGQXVIRHB2Z0xCd3dpXG56QVlTMFEyTHcxalNQS000dkZuRWtNNitFZXJRb3Facml4TTQrVkh0
-eitFUVZjZ040bnEvOUxrUUhhdTROS2VBXG5KM2praHpuc2RmeUZ6cytuK2Y3Yy8vbFJQVlJUZmh6T3FN
-Qi81Ui9ZVHRyNURLSHlwZHdFYm90U0VYMlI0Lzd5XG5rVUZkb2hCZ2xxUzhGZGQwQS9LbUJ1Zkx0Nk9p
-UGJQRC9qelorUFJPVk51VVRzRmp1c3luTkRrdmJ5RnROaCtEXG5DSWdMc2szbEFnTUJBQUVDZ2dFQVJV
-T3M3NXFjSThwZXJuaS9sRy9ManVJTUNxa25aN04rZ0x4TmppNC91NVZOXG5CS0JVZ3BWL1BzNkQ2QXd3
-SU1OMzBuL2dmM2tQWU1xZHB4OUUwbTJqbEh6dC8xUmt1QUZPYkRtM0I5aWFRSHVFXG5KYklKeGtKL2VJ
-RnlhS2VzSCtuWUlxWWl3dWFjOURqcUlxWFVlVXdDcGk2UlhZTG1SM3RyTS9SbVBCWlhybnF2XG53Wno4
-TTlvWnFWRkRvNGRRZzB6Ym9vZ0RDa09TUEJEZVpOeFNjQ3owMGFyNnJrT0FaRjZBSUpDOStBRFZnZmdv
-XG5SakJid3N0NmJkMk9tV0x6dDlrQ3pTd3gvQ2ZIdE82VVQwQ0tlQXF2Q0hYK0pxOG9TMGpmU0tKb25p
-b1EyblZhXG5Ya1VtUGxkMnN2ZGthUFU4dGVQZWJLT2dxOVdFV3RJYVdQTDl5MlNCZ3dLQmdRRFRocFJh
-QU52TGhWc1lWTktNXG5uTU96Nmx5bW5uSHQ2QW5WN1d2UEQxczBGd2dmNFk2MkJnTElvdEJBeElSQkI1
-aHFhTm5BS0gvRUpJTGM4YlFoXG4weW5mYm5KRlh3S3F3ZFBLVk1ROUpOZVQzZS9yRkhnL3dHNERNYU5Y
-UnVOUGxDek43Q0Z5c2RhNlFxdUhWcSs1XG56TTZRQTlzNUhER0hhRHZIcUw3NGV5RVoxd0tCZ1FESGo0
-VndVZjhoZUxkazRwams0NmliMmFnSWgxS2tXZFNWXG5hM0pxaUowREFYQm9Gc0RiMzdHM0JQa3pLbUhL
-QkVGZGd4dmZlT1RPSHI4QWM1NldRYm5uUjZlRkJ0Z05rQVcwXG5YN1pJWWpMUkxXM2xzL2lqOHZCaklZ
-U2dERGFwWTFkMDI1bTgvNlMzV04zUzMzQTY4N2ZLcFJGSVdsY0UzaWVNXG5uRmp4cE1DMm93S0JnSHZX
-d2NvRDBLclIwMmhtV0xLTUlTT1haVkVEV0k1Qm1HaVB6TnQ0RVJ4cEU0K2V2YStoXG55MFZ0MU9EbWJN
-dXB4N2tjMDhkbHJvL0dGSHVJWXI2ZTQxZjFVSjkrcFpBVlZJcVRvQ1J3Q21wK3VEVDRVZ0o1XG5CYStI
-QXl0WXpFSk43UUZPYXJLOG5ZdUU5dW1RZmVjWW1pTEVyemM3WTEvMFRYTnlQd1E1Q2tNWEFvR0FZNWla
-XG5mRWt3RDhCenB3SUFWSnZhVm8zMmN1czJyNWUxcFMwTzJXUjlHRGJycHNkVVVXZi9CZHlSa3B1Z1du
-WnRPUUpxXG5Nc25mUjQvSXU2ejRoUDBnanZFUUJqQTRPK3laTEVCb2RRK3RWUUJiVEx6Wlp0bWtaNVVl
-MzlHNHBpbFNTSndnXG55bGE4R2xWYndCYUxxS0JpSmR6a0Z6d2ZHZXJWeWpOdG9Jd2RNZ2tDZ1lBMW9Z
-dkhDaUZ1MHBWZHl2WThmOGgyXG4vNWNkSmVlZ0hOeGZuU25TZE5GaXZRMG9JLzUyZWQwUUw2TUxzSkFV
-ZWNMdkJ0cnluL1lKVHpGVnpPV3N3SzB5XG5GaTVGRDZJNXpNZmZKVUN2bWRMTUxLZi9oMlZUcHA4cFFJ
-MmczZGhtd093WlhaSFpsQ1UvYUJqK0Exb1pqR2ZOXG5xd05Pc3lPdGlLckNFUTZZeWNyK01RPT1cbi0t
-LS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cbiIsCiAgImNsaWVudF9lbWFpbCI6ICJmaXJlYmFzZS1hZG1p
-bnNkay1mYnN2Y0BmaWxlZW5jcnlwdGlvbi02OTUzOS5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsCiAg
-ImNsaWVudF9pZCI6ICIxMTgyNjA5MTk0MTUyNDAyNTMyNjYiLAogICJhdXRoX3VyaSI6ICJodHRwczov
-L2FjY291bnRzLmdvb2dsZS5jb20vby9vYXV0aDIvYXV0aCIsCiAgInRva2VuX3VyaSI6ICJodHRwczov
-L29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsCiAgImF1dGhfcHJvdmlkZXJfeDUwOV9jZXJ0X3Vy
-bCI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9vYXV0aDIvdjEvY2VydHMiLAogICJjbGllbnRf
-eDUwOV9jZXJ0X3VybCI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9yb2JvdC92MS9tZXRhZGF0
-YS94NTA5L2ZpcmViYXNlLWFkbWluc2RrLWZic3ZjJTQwZmlsZWVuY3J5cHRpb24tNjk1MzkuaWFtLmdz
-ZXJ2aWNlYWNjb3VudC5jb20iLAogICJ1bml2ZXJzZV9kb21haW4iOiAiZ29vZ2xlYXBpcy5jb20iCn0="""
+FIREBASE_DEFAULT_KEY_B64 = """eyJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsICJwcm9qZWN0X2lkIjogImZpbGVlbmNyeXB0aW9uLTY5NTM5IiwgInByaXZhdGVfa2V5X2lkIjogImUxZDYzYTU5N2ZiODljMzI3NjA4YjNkY2U0N2IzNWE5NTA3YjQ2MWUiLCAicHJpdmF0ZV9rZXkiOiAiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tXG5NSUlFdkFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLWXdnZ1NpQWdFQUFvSUJBUUNrNURQQWpxVmpkRUhkXG5PYTJoVWVTQ1FpSjF0Y1FKdDNXaG5MZFBCSFZIWk83OGtUVDdIUWFOMWxHV0hLSTBPcmhXQ0ZtL3Y1Q21xSi8vXG5obWQ4cnFNdy9PSjVHeVBSdWxOaGZSSWlRNHBXemhvbXJUODBSd3J3d05xQzljK09telpGQXVIRHB2Z0xCd3dpXG56QVlTMFEyTHcxalNQS000dkZuRWtNNitFZXJRb3Facml4TTQrVkh0eitFUVZjZ040bnEvOUxrUUhhdTROS2VBXG5KM2praHpuc2RmeUZ6cytuK2Y3Yy8vbFJQVlJUZmh6T3FNQi81Ui9ZVHRyNURLSHlwZHdFYm90U0VYMlI0Lzd5XG5rVUZkb2hCZ2xxUzhGZGQwQS9LbUJ1Zkx0Nk9pUGJQRC9qelorUFJPVk51VVRzRmp1c3luTkRrdmJ5RnROaCtEXG5DSWdMc2szbEFnTUJBQUVDZ2dFQVJVT3M3NXFjSThwZXJuaS9sRy9ManVJTUNxa25aN04rZ0x4TmppNC91NVZOXG5CS0JVZ3BWL1BzNkQ2QXd3SU1OMzBuL2dmM2tQWU1xZHB4OUUwbTJqbEh6dC8xUmt1QUZPYkRtM0I5aWFRSHVFXG5KYklKeGtKL2VJRnlhS2VzSCtuWUlxWWl3dWFjOURqcUlxWFVlVXdDcGk2UlhZTG1SM3RyTS9SbVBCWlhybnF2XG53Wno4TTlvWnFWRkRvNGRRZzB6Ym9vZ0RDa09TUEJEZVpOeFNjQ3owMGFyNnJrT0FaRjZBSUpDOStBRFZnZmdvXG5SakJid3N0NmJkMk9tV0x6dDlrQ3pTd3gvQ2ZIdE82VVQwQ0tlQXF2Q0hYK0pxOG9TMGpmU0tKb25pb1EyblZhXG5Ya1VtUGxkMnN2ZGthUFU4dGVQZWJLT2dxOVdFV3RJYVdQTDl5MlNCZ3dLQmdRRFRocFJhQU52TGhWc1lWTktNXG5uTU96Nmx5bW5uSHQ2QW5WN1d2UEQxczBGd2dmNFk2MkJnTElvdEJBeElSQkI1aHFhTm5BS0gvRUpJTGM4YlFoXG4weW5mYm5KRlh3S3F3ZFBLVk1ROUpOZVQzZS9yRkhnL3dHNERNYU5YUnVOUGxDek43Q0Z5c2RhNlFxdUhWcSs1XG56TTZRQTlzNUhER0hhRHZIcUw3NGV5RVoxd0tCZ1FESGo0VndVZjhoZUxkazRwams0NmliMmFnSWgxS2tXZFNWXG5hM0pxaUowREFYQm9Gc0RiMzdHM0JQa3pLbUhLQkVGZGd4dmZlT1RPSHI4QWM1NldRYm5uUjZlRkJ0Z05rQVcwXG5YN1pJWWpMUkxXM2xzL2lqOHZCaklZU2dERGFwWTFkMDI1bTgvNlMzV04zUzMzQTY4N2ZLcFJGSVdsY0UzaWVNXG5uRmp4cE1DMm93S0JnSHZXd2NvRDBLclIwMmhtV0xLTUlTT1haVkVEV0k1Qm1HaVB6TnQ0RVJ4cEU0K2V2YStoXG55MFZ0MU9EbWJNdXB4N2tjMDhkbHJvL0dGSHVJWXI2ZTQxZjFVSjkrcFpBVlZJcVRvQ1J3Q21wK3VEVDRVZ0o1XG5CYStIQXl0WXpFSk43UUZPYXJLOG5ZdUU5dW1RZmVjWW1pTEVyemM3WTEvMFRYTnlQd1E1Q2tNWEFvR0FZNWlaXG5mRWt3RDhCenB3SUFWSnZhVm8zMmN1czJyNWUxcFMwTzJXUjlHRGJycHNkVVVXZi9CZHlSa3B1Z1duWnRPUUpxXG5Nc25mUjQvSXU2ejRoUDBnanZFUUJqQTRPK3laTEVCb2RRK3RWUUJiVEx6Wlp0bWtaNVVlMzlHNHBpbFNTSndnXG55bGE4R2xWYndCYUxxS0JpSmR6a0Z6d2ZHZXJWeWpOdG9Jd2RNZ2tDZ1lBMW9ZdkhDaUZ1MHBWZHl2WThmOGgyXG4vNWNkSmVlZ0hOeGZuU25TZE5GaXZRMG9JLzUyZWQwUUw2TUxzSkFVZWNMdkJ0cnluL1lKVHpGVnpPV3N3SzB5XG5GaTVGRDZJNXpNZmZKVUN2bWRMTUxLZi9oMlZUcHA4cFFJMmczZGhtd093WlhaSFpsQ1UvYUJqK0Exb1pqR2ZOXG5xd05Pc3lPdGlLckNFUTZZeWNyK01RPT1cbi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cbiIsICJjbGllbnRfZW1haWwiOiAiZmlyZWJhc2UtYWRtaW5zZGstZmJzdmNAZmlsZWVuY3J5cHRpb24tNjk1MzkuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCAiY2xpZW50X2lkIjogIjExODI2MDkxOTQxNTI0MDI1MzI2NiIsICJhdXRoX3VyaSI6ICJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20vby9vYXV0aDIvYXV0aCIsICJ0b2tlbl91cmkiOiAiaHR0cHM6Ly9vYXV0aDIuZ29vZ2xlYXBpcy5jb20vdG9rZW4iLCAiYXV0aF9wcm92aWRlcl94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL29hdXRoMi92MS9jZXJ0cyIsICJjbGllbnRfeDUwOV9jZXJ0X3VybCI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9yb2JvdC92MS9tZXRhZGF0YS94NTA5L2ZpcmViYXNlLWFkbWluc2RrLWZic3ZjJTQwZmlsZWVuY3J5cHRpb24tNjk1MzkuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLCAidW5pdmVyc2VfZG9tYWluIjogImdvb2dsZWFwaXMuY29tIn0="""
 
 # ====================== FIREBASE ======================
 try:
@@ -70,7 +36,8 @@ try:
             if env_val.startswith('{'):
                 key_data = json.loads(env_val)
             else:
-                key_data = json.loads(base64.b64decode(env_val).decode('utf-8'))
+                clean_b64 = ''.join(env_val.split())
+                key_data = json.loads(base64.b64decode(clean_b64).decode('utf-8'))
             cred = credentials.Certificate(key_data)
             firebase_admin.initialize_app(cred, {
                 'databaseURL': os.environ.get('FIREBASE_DATABASE_URL', 'https://fileencryption-69539-default-rtdb.firebaseio.com/')
@@ -85,34 +52,14 @@ def generate_key():
 def xor_encrypt_decrypt(data, key):
     return bytes(a ^ b for a, b in zip(data, key * (len(data) // len(key) + 1)))
 
-import re
-import json
-import time
-import socket as _socket
-
 def sanitize_key(text):
     return re.sub(r'[\.\$\#\[\]\/]', '_', text)
 
 LOCAL_DB_FILE = '/tmp/local_db.json' if IS_VERCEL else 'local_db.json'
 
-# ====================== FAST NETWORK CHECK ======================
-_firebase_status = {'online': None, 'checked_at': 0}
-
 def is_firebase_available():
-    """Quick 2-second probe cached for 30 seconds to avoid repeated slow timeouts."""
-    if not firebase_admin._apps:
-        return False
-    now = time.time()
-    if now - _firebase_status['checked_at'] < 30:
-        return _firebase_status['online']
-    try:
-        _socket.create_connection(('fileencryption-69539-default-rtdb.firebaseio.com', 443), timeout=2).close()
-        _firebase_status['online'] = True
-    except (OSError, _socket.timeout, Exception):
-        # On Vercel serverless, HTTPS works via Firebase Admin SDK REST even if raw sockets are sandboxed
-        _firebase_status['online'] = True if IS_VERCEL else False
-    _firebase_status['checked_at'] = now
-    return _firebase_status['online']
+    """Returns True if Firebase Admin SDK is initialized."""
+    return bool(firebase_admin._apps)
 
 def get_local_db():
     if os.path.exists(LOCAL_DB_FILE):
