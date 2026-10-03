@@ -25,7 +25,11 @@ try:
                 'databaseURL': 'https://fileencryption-69539-default-rtdb.firebaseio.com/'
             })
         elif os.environ.get('FIREBASE_KEY_JSON'):
-            key_data = json.loads(os.environ.get('FIREBASE_KEY_JSON'))
+            env_val = os.environ.get('FIREBASE_KEY_JSON').strip()
+            if env_val.startswith('{'):
+                key_data = json.loads(env_val)
+            else:
+                key_data = json.loads(base64.b64decode(env_val).decode('utf-8'))
             cred = credentials.Certificate(key_data)
             firebase_admin.initialize_app(cred, {
                 'databaseURL': os.environ.get('FIREBASE_DATABASE_URL', 'https://fileencryption-69539-default-rtdb.firebaseio.com/')
@@ -57,14 +61,17 @@ _firebase_status = {'online': None, 'checked_at': 0}
 
 def is_firebase_available():
     """Quick 2-second probe cached for 30 seconds to avoid repeated slow timeouts."""
+    if not firebase_admin._apps:
+        return False
     now = time.time()
     if now - _firebase_status['checked_at'] < 30:
         return _firebase_status['online']
     try:
         _socket.create_connection(('fileencryption-69539-default-rtdb.firebaseio.com', 443), timeout=2).close()
         _firebase_status['online'] = True
-    except (OSError, _socket.timeout):
-        _firebase_status['online'] = False
+    except (OSError, _socket.timeout, Exception):
+        # On Vercel serverless, HTTPS works via Firebase Admin SDK REST even if raw sockets are sandboxed
+        _firebase_status['online'] = True if IS_VERCEL else False
     _firebase_status['checked_at'] = now
     return _firebase_status['online']
 
@@ -114,7 +121,17 @@ def get_user_file_records(user):
 
 def get_single_file_record(user, file_node_id):
     records = get_user_file_records(user)
-    return records.get(file_node_id)
+    rec = records.get(file_node_id)
+    if rec:
+        return rec
+    if is_firebase_available():
+        try:
+            remote_rec = db.reference(f'files/{user}/{file_node_id}').get()
+            if isinstance(remote_rec, dict):
+                return remote_rec
+        except Exception as e:
+            print(f"Firebase single query error: {e}")
+    return None
 
 def delete_file_record(user, file_node_id):
     # Remove from local DB
