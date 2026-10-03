@@ -16,6 +16,47 @@ UPLOAD_FOLDER = '/tmp/uploads' if IS_VERCEL else 'uploads'
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+FIREBASE_DEFAULT_KEY_B64 = """ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAiZmlsZWVuY3J5cHRp
+b24tNjk1MzkiLAogICJwcml2YXRlX2tleV9pZCI6ICJlMWQ2M2E1OTdmYjg5YzMyNzYwOGIzZGNlNDdi
+MzVhOTUwN2I0NjFlIiwKICAicHJpdmF0ZV9rZXkiOiAiLS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0t
+XG5NSUlFdkFJQkFEQU5CZ2txaGtpRzl3MEJBUUVGQUFTQ0JLWXdnZ1NpQWdFQUFvSUJBUUNrNURQQWpx
+VmpkRUhkXG5PYTJoVWVTQ1FpSjF0Y1FKdDNXaG5MZFBCSFZIWk83OGtUVDdIUWFOMWxHV0hLSTBPcmhX
+Q0ZtL3Y1Q21xSi8vXG5obWQ4cnFNdy9PSjVHeVBSdWxOaGZSSWlRNHBXemhvbXJUODBSd3J3d05xQzlj
+K09telpGQXVIRHB2Z0xCd3dpXG56QVlTMFEyTHcxalNQS000dkZuRWtNNitFZXJRb3Facml4TTQrVkh0
+eitFUVZjZ040bnEvOUxrUUhhdTROS2VBXG5KM2praHpuc2RmeUZ6cytuK2Y3Yy8vbFJQVlJUZmh6T3FN
+Qi81Ui9ZVHRyNURLSHlwZHdFYm90U0VYMlI0Lzd5XG5rVUZkb2hCZ2xxUzhGZGQwQS9LbUJ1Zkx0Nk9p
+UGJQRC9qelorUFJPVk51VVRzRmp1c3luTkRrdmJ5RnROaCtEXG5DSWdMc2szbEFnTUJBQUVDZ2dFQVJV
+T3M3NXFjSThwZXJuaS9sRy9ManVJTUNxa25aN04rZ0x4TmppNC91NVZOXG5CS0JVZ3BWL1BzNkQ2QXd3
+SU1OMzBuL2dmM2tQWU1xZHB4OUUwbTJqbEh6dC8xUmt1QUZPYkRtM0I5aWFRSHVFXG5KYklKeGtKL2VJ
+RnlhS2VzSCtuWUlxWWl3dWFjOURqcUlxWFVlVXdDcGk2UlhZTG1SM3RyTS9SbVBCWlhybnF2XG53Wno4
+TTlvWnFWRkRvNGRRZzB6Ym9vZ0RDa09TUEJEZVpOeFNjQ3owMGFyNnJrT0FaRjZBSUpDOStBRFZnZmdv
+XG5SakJid3N0NmJkMk9tV0x6dDlrQ3pTd3gvQ2ZIdE82VVQwQ0tlQXF2Q0hYK0pxOG9TMGpmU0tKb25p
+b1EyblZhXG5Ya1VtUGxkMnN2ZGthUFU4dGVQZWJLT2dxOVdFV3RJYVdQTDl5MlNCZ3dLQmdRRFRocFJh
+QU52TGhWc1lWTktNXG5uTU96Nmx5bW5uSHQ2QW5WN1d2UEQxczBGd2dmNFk2MkJnTElvdEJBeElSQkI1
+aHFhTm5BS0gvRUpJTGM4YlFoXG4weW5mYm5KRlh3S3F3ZFBLVk1ROUpOZVQzZS9yRkhnL3dHNERNYU5Y
+UnVOUGxDek43Q0Z5c2RhNlFxdUhWcSs1XG56TTZRQTlzNUhER0hhRHZIcUw3NGV5RVoxd0tCZ1FESGo0
+VndVZjhoZUxkazRwams0NmliMmFnSWgxS2tXZFNWXG5hM0pxaUowREFYQm9Gc0RiMzdHM0JQa3pLbUhL
+QkVGZGd4dmZlT1RPSHI4QWM1NldRYm5uUjZlRkJ0Z05rQVcwXG5YN1pJWWpMUkxXM2xzL2lqOHZCaklZ
+U2dERGFwWTFkMDI1bTgvNlMzV04zUzMzQTY4N2ZLcFJGSVdsY0UzaWVNXG5uRmp4cE1DMm93S0JnSHZX
+d2NvRDBLclIwMmhtV0xLTUlTT1haVkVEV0k1Qm1HaVB6TnQ0RVJ4cEU0K2V2YStoXG55MFZ0MU9EbWJN
+dXB4N2tjMDhkbHJvL0dGSHVJWXI2ZTQxZjFVSjkrcFpBVlZJcVRvQ1J3Q21wK3VEVDRVZ0o1XG5CYStI
+QXl0WXpFSk43UUZPYXJLOG5ZdUU5dW1RZmVjWW1pTEVyemM3WTEvMFRYTnlQd1E1Q2tNWEFvR0FZNWla
+XG5mRWt3RDhCenB3SUFWSnZhVm8zMmN1czJyNWUxcFMwTzJXUjlHRGJycHNkVVVXZi9CZHlSa3B1Z1du
+WnRPUUpxXG5Nc25mUjQvSXU2ejRoUDBnanZFUUJqQTRPK3laTEVCb2RRK3RWUUJiVEx6Wlp0bWtaNVVl
+MzlHNHBpbFNTSndnXG55bGE4R2xWYndCYUxxS0JpSmR6a0Z6d2ZHZXJWeWpOdG9Jd2RNZ2tDZ1lBMW9Z
+dkhDaUZ1MHBWZHl2WThmOGgyXG4vNWNkSmVlZ0hOeGZuU25TZE5GaXZRMG9JLzUyZWQwUUw2TUxzSkFV
+ZWNMdkJ0cnluL1lKVHpGVnpPV3N3SzB5XG5GaTVGRDZJNXpNZmZKVUN2bWRMTUxLZi9oMlZUcHA4cFFJ
+MmczZGhtd093WlhaSFpsQ1UvYUJqK0Exb1pqR2ZOXG5xd05Pc3lPdGlLckNFUTZZeWNyK01RPT1cbi0t
+LS0tRU5EIFBSSVZBVEUgS0VZLS0tLS1cbiIsCiAgImNsaWVudF9lbWFpbCI6ICJmaXJlYmFzZS1hZG1p
+bnNkay1mYnN2Y0BmaWxlZW5jcnlwdGlvbi02OTUzOS5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIsCiAg
+ImNsaWVudF9pZCI6ICIxMTgyNjA5MTk0MTUyNDAyNTMyNjYiLAogICJhdXRoX3VyaSI6ICJodHRwczov
+L2FjY291bnRzLmdvb2dsZS5jb20vby9vYXV0aDIvYXV0aCIsCiAgInRva2VuX3VyaSI6ICJodHRwczov
+L29hdXRoMi5nb29nbGVhcGlzLmNvbS90b2tlbiIsCiAgImF1dGhfcHJvdmlkZXJfeDUwOV9jZXJ0X3Vy
+bCI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9vYXV0aDIvdjEvY2VydHMiLAogICJjbGllbnRf
+eDUwOV9jZXJ0X3VybCI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9yb2JvdC92MS9tZXRhZGF0
+YS94NTA5L2ZpcmViYXNlLWFkbWluc2RrLWZic3ZjJTQwZmlsZWVuY3J5cHRpb24tNjk1MzkuaWFtLmdz
+ZXJ2aWNlYWNjb3VudC5jb20iLAogICJ1bml2ZXJzZV9kb21haW4iOiAiZ29vZ2xlYXBpcy5jb20iCn0="""
+
 # ====================== FIREBASE ======================
 try:
     if not firebase_admin._apps:
@@ -24,8 +65,8 @@ try:
             firebase_admin.initialize_app(cred, {
                 'databaseURL': 'https://fileencryption-69539-default-rtdb.firebaseio.com/'
             })
-        elif os.environ.get('FIREBASE_KEY_JSON'):
-            env_val = os.environ.get('FIREBASE_KEY_JSON').strip()
+        else:
+            env_val = os.environ.get('FIREBASE_KEY_JSON', FIREBASE_DEFAULT_KEY_B64).strip()
             if env_val.startswith('{'):
                 key_data = json.loads(env_val)
             else:
@@ -34,8 +75,6 @@ try:
             firebase_admin.initialize_app(cred, {
                 'databaseURL': os.environ.get('FIREBASE_DATABASE_URL', 'https://fileencryption-69539-default-rtdb.firebaseio.com/')
             })
-        else:
-            print("Notice: Firebase key not found on disk or env. App running in local mode.")
 except Exception as e:
     print(f"Firebase initialization warning: {e}")
 
@@ -124,11 +163,17 @@ def get_single_file_record(user, file_node_id):
     rec = records.get(file_node_id)
     if rec:
         return rec
+    clean_id = sanitize_key(file_node_id)
+    if clean_id in records:
+        return records[clean_id]
     if is_firebase_available():
         try:
-            remote_rec = db.reference(f'files/{user}/{file_node_id}').get()
+            remote_rec = db.reference(f'files/{user}/{clean_id}').get()
             if isinstance(remote_rec, dict):
                 return remote_rec
+            remote_rec_raw = db.reference(f'files/{user}/{file_node_id}').get()
+            if isinstance(remote_rec_raw, dict):
+                return remote_rec_raw
         except Exception as e:
             print(f"Firebase single query error: {e}")
     return None
@@ -426,7 +471,7 @@ def dashboard():
 
     return render_template('dashboard.html', files=files)
 
-@app.route('/delete/<filename>')
+@app.route('/delete/<path:filename>')
 def delete_file(filename):
     if 'user' not in session:
         return redirect(url_for('login'))
@@ -436,7 +481,7 @@ def delete_file(filename):
     flash('File deleted successfully!', 'success')
     return redirect(url_for('dashboard'))
 
-@app.route('/download/<filename>', methods=['GET', 'POST'])
+@app.route('/download/<path:filename>', methods=['GET', 'POST'])
 def download(filename):
     if 'user' not in session:
         return redirect(url_for('login'))
